@@ -3,18 +3,17 @@ from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from PIL import Image
 import torch
 
-# Load the model and processor
+# Check if a GPU is available, else use CPU
 device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Load the model and processor
 model = Qwen2VLForConditionalGeneration.from_pretrained(
     "Qwen/Qwen2-VL-2B-Instruct",
     torch_dtype="auto",
-    device_map="auto" if device == "cuda" else None,
+    device_map="auto" if device == "cuda" else None,  # Use auto device map only if CUDA is available
 )
 
 processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-2B-Instruct")
-
-# Move model to the appropriate device
-model.to(device)
 
 # Define a function to process the image and generate the output
 def generate_output(image):
@@ -37,8 +36,7 @@ def generate_output(image):
         return_tensors="pt"
     )
 
-    # Move inputs to the appropriate device
-    inputs = inputs.to(device)
+    inputs = inputs.to(device)  # Use the determined device (cuda or cpu)
 
     output_ids = model.generate(**inputs, max_new_tokens=1024)
 
