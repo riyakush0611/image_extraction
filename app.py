@@ -1,28 +1,34 @@
+# app.py
 import streamlit as st
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from PIL import Image
 import torch
+import logging
 
-# Check if a GPU is available, else use CPU
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# Set logging level to DEBUG
+logging.basicConfig(level=logging.DEBUG)
 
-# Load the model and processor
+# Load the model and processor once
 model = Qwen2VLForConditionalGeneration.from_pretrained(
     "Qwen/Qwen2-VL-2B-Instruct",
     torch_dtype="auto",
-    device_map="auto" if device == "cuda" else None,  # Use auto device map only if CUDA is available
+    device_map="auto",
 )
 
 processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-2B-Instruct")
+logging.info("Model and Processor loaded successfully")
 
-# Define a function to process the image and generate the output
-def generate_output(image):
+# Function to process the image and generate output
+def analyze_image(image):
     messages = [
         {
             "role": "user",
             "content": [
                 {"type": "image"},
-                {"type": "text", "text": "What is product size, manufacturing date, expiry date, brand name, box size, product description?"}
+                {
+                    "type": "text",
+                    "text": "What is the brand name, manufacturing date, expiry date, quantity, category?"
+                }
             ]
         }
     ]
@@ -36,13 +42,12 @@ def generate_output(image):
         return_tensors="pt"
     )
 
-    inputs = inputs.to(device)  # Use the determined device (cuda or cpu)
+    inputs = inputs.to("cuda" if torch.cuda.is_available() else "cpu")
 
-    output_ids = model.generate(**inputs, max_new_tokens=1024)
+    output_ids = model.generate(**inputs, max_new_tokens=256)
 
     generated_ids = [
-        output_ids[len(input_ids):]
-        for input_ids, output_ids in zip(inputs.input_ids, output_ids)
+        output_ids[len(input_ids):] for input_ids, output_ids in zip(inputs.input_ids, output_ids)
     ]
 
     output_text = processor.batch_decode(
@@ -51,24 +56,21 @@ def generate_output(image):
 
     return output_text
 
-# Streamlit app layout
-st.title("Product Information Extractor")
-st.write("Upload an image of the product:")
+# Streamlit UI
+st.title("Image Analysis for Product Information")
 
 # Upload image
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+uploaded_file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption='Uploaded Image', use_column_width=True)
-    st.write("")
-    st.write("Classifying...")
 
-    # Generate output
-    output_text = generate_output(image)
-    
-    # Display output
-    st.write("Generated Output:")
-    st.write(output_text)
+    # Display the image
+    st.image(image, caption="Uploaded Image", use_column_width=True)
+    st.write("Image uploaded successfully!")
 
-# Additional Streamlit configurations (if needed)
+    if st.button("Analyze"):
+        # Analyze the image and display results
+        output_text = analyze_image(image)
+        st.subheader("Analysis Output:")
+        st.write(output_text)
