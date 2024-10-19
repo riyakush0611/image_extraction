@@ -4,13 +4,17 @@ from PIL import Image
 import torch
 
 # Load the model and processor
+device = "cuda" if torch.cuda.is_available() else "cpu"
 model = Qwen2VLForConditionalGeneration.from_pretrained(
     "Qwen/Qwen2-VL-2B-Instruct",
     torch_dtype="auto",
-    device_map="auto",
+    device_map="auto" if device == "cuda" else None,
 )
 
 processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-2B-Instruct")
+
+# Move model to the appropriate device
+model.to(device)
 
 # Define a function to process the image and generate the output
 def generate_output(image):
@@ -33,7 +37,8 @@ def generate_output(image):
         return_tensors="pt"
     )
 
-    inputs = inputs.to("cuda")
+    # Move inputs to the appropriate device
+    inputs = inputs.to(device)
 
     output_ids = model.generate(**inputs, max_new_tokens=1024)
 
