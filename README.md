@@ -37,6 +37,6 @@ Once the model is fine-tuned, we perform inference using inference.py. This scri
 Model Used: Qwen2-VL-7B-Instruct
 Finetuning Framework: We fine-tuned the model specifically to extract text related to product labels and packaging.
 Tools and Techniques: The model is optimized using Low-Rank Adaptation (LoRA) for efficient fine-tuning. 
-You can see steps which qwen internally perform 
+
 ![kt](https://github.com/user-attachments/assets/076e9734-b783-4401-be86-2a4a55771c6f)
 
